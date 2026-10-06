@@ -3,264 +3,252 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Line Follower Game</title>
+    <title>Grid Race & Block Game</title>
     <style>
         body {
             margin: 0;
-            background: #1a1a1a;
+            background: #1e1e24;
             color: #fff;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            font-family: 'Segoe UI', system-ui, sans-serif;
             display: flex;
             flex-direction: column;
             align-items: center;
             justify-content: center;
             min-height: 100vh;
-            overflow: hidden;
         }
 
-        h1 {
-            margin: 5px 0;
-            font-size: 24px;
-            letter-spacing: 1px;
-        }
-
-        p {
-            margin: 0 0 15px 0;
-            color: #aaa;
-            font-size: 14px;
-        }
-
-        #gameContainer {
-            position: relative;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
-            border-radius: 8px;
-            overflow: hidden;
-        }
-
-        canvas {
-            background: #222;
-            display: block;
-            cursor: none; /* Hide real cursor over the game */
-        }
-
-        #statusOverlay {
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            text-align: center;
-            background: rgba(0, 0, 0, 0.85);
-            padding: 20px 40px;
-            border-radius: 10px;
-            border: 2px solid #444;
-            display: none;
-        }
-
-        #statusText {
-            font-size: 28px;
-            font-weight: bold;
+        h1 { margin: 10px 0 5px 0; font-size: 26px; }
+        #turnIndicator {
+            font-size: 18px;
             margin-bottom: 15px;
+            font-weight: bold;
+            padding: 8px 16px;
+            border-radius: 20px;
+            background: #2a2a35;
+            transition: all 0.3s;
         }
 
+        .p1-turn { color: #38b000; border: 2px solid #38b000; box-shadow: 0 0 10px rgba(56,176,0,0.3); }
+        .p2-turn { color: #e05780; border: 2px solid #e05780; box-shadow: 0 0 10px rgba(224,87,128,0.3); }
+
+        #gameContainer { position: relative; }
+        canvas {
+            background: #111116;
+            border-radius: 8px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.7);
+            display: block;
+        }
+
+        #overlay {
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.85);
+            border-radius: 8px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.4s;
+        }
+        #overlay.show { opacity: 1; pointer-events: auto; }
+        #winnerText { font-size: 36px; font-weight: bold; margin-bottom: 20px; }
+        
         button {
-            background: #00adb5;
+            background: #4a4ae2;
             color: white;
             border: none;
-            padding: 10px 20px;
+            padding: 12px 24px;
             font-size: 16px;
-            border-radius: 5px;
+            font-weight: bold;
+            border-radius: 6px;
             cursor: pointer;
             transition: background 0.2s;
         }
-
-        button:hover {
-            background: #00f5ff;
-        }
+        button:hover { background: #6363f7; }
     </style>
 </head>
 <body>
 
-    <h1>Line & Ball Game</h1>
-    <p>Guide the ball carefully along the track to the green zone. Don't fall off!</p>
+    <h1>Grid Line Racer</h1>
+    <div id="turnIndicator" class="p1-turn">Player 1's Turn (Blue)</div>
 
     <div id="gameContainer">
-        <canvas id="gameCanvas" width="800" height="500"></canvas>
-        <div id="statusOverlay">
-            <div id="statusText">YOU WIN!</div>
-            <button id="actionBtn" onclick="resetGame()">Play Again</button>
+        <canvas id="gameCanvas" width="600" height="600"></canvas>
+        <div id="overlay">
+            <div id="winnerText">PLAYER 1 WINS!</div>
+            <button onclick="initGame()">Play Again</button>
         </div>
     </div>
 
     <script>
         const canvas = document.getElementById('gameCanvas');
         const ctx = canvas.getContext('2d');
-        const overlay = document.getElementById('statusOverlay');
-        const statusText = document.getElementById('statusText');
-        const actionBtn = document.getElementById('actionBtn');
+        const turnIndicator = document.getElementById('turnIndicator');
+        const overlay = document.getElementById('overlay');
+        const winnerText = document.getElementById('winnerText');
 
-        // Game Configuration
-        const pathWidth = 40; 
-        const ballRadius = 10;
-        
-        // Define the track checkpoints (centers of the line segments)
-        const pathPoints = [
-            {x: 50, y: 250},
-            {x: 200, y: 250},
-            {x: 200, y: 100},
-            {x: 450, y: 100},
-            {x: 450, y: 400},
-            {x: 650, y: 400},
-            {x: 650, y: 250},
-            {x: 750, y: 250}
-        ];
+        // Grid parameters (7x7 squares)
+        const gridSize = 7;
+        const cellSize = 70;
+        const offset = 55; // Margin offset to center the board
+        const wallThickness = 8;
+        const clickTolerance = 15; // Detection radius around lines
 
-        let ball = { x: 50, y: 250 };
-        let gameActive = true;
-        let hasStarted = false;
+        let p1, p2, turn, walls, gameOver;
 
-        // Check distance from a point to a line segment
-        function getDistanceToSegment(p, a, b) {
-            let ab = { x: b.x - a.x, y: b.y - a.y };
-            let ap = { x: p.x - a.x, y: p.y - a.y };
-            let abLenSq = ab.x * ab.x + ab.y * ab.y;
+        function initGame() {
+            // Player pieces track tile coordinates (row, col from 0 to gridSize-1)
+            p1 = { r: 0, c: 3 }; // Starts top middle
+            p2 = { r: gridSize - 1, c: 3 }; // Starts bottom middle
+            turn = 1; // 1 = P1, 2 = P2
+            walls = []; // Array tracking placed lines: {type: 'H'|'V', r: num, c: num}
+            gameOver = false;
             
-            if (abLenSq === 0) return Math.sqrt(ap.x * ap.x + ap.y * ap.y);
-            
-            // Project p onto ab, clamp to segment bounds
-            let t = (ap.x * ab.x + ap.y * ab.y) / abLenSq;
-            t = Math.max(0, Math.min(1, t));
-            
-            let closest = { x: a.x + t * ab.x, y: a.y + t * ab.y };
-            let dx = p.x - closest.x;
-            let dy = p.y - closest.y;
-            
-            return Math.sqrt(dx * dx + dy * dy);
+            overlay.classList.remove('show');
+            updateTurnUI();
+            draw();
         }
 
-        // Verify if ball position is legally inside the track bounds
-        function isBallOnPath(p) {
-            for (let i = 0; i < pathPoints.length - 1; i++) {
-                if (getDistanceToSegment(p, pathPoints[i], pathPoints[i+1]) <= (pathWidth / 2)) {
-                    return true;
-                }
+        function updateTurnUI() {
+            if(turn === 1) {
+                turnIndicator.innerText = "Player 1's Turn (Move Ball or Place Wall)";
+                turnIndicator.className = "p1-turn";
+            } else {
+                turnIndicator.innerText = "Player 2's Turn (Move Ball or Place Wall)";
+                turnIndicator.className = "p2-turn";
             }
-            return false;
         }
 
-        // Track mouse movements to update ball placement
-        canvas.addEventListener('mousemove', (e) => {
-            if (!gameActive) return;
+        // Check if a line wall exists blocking an edge
+        function hasWall(r, c, edge) {
+            return walls.some(w => {
+                if (edge === 'top') return w.type === 'H' && w.r === r && w.c === c;
+                if (edge === 'bottom') return w.type === 'H' && w.r === r + 1 && w.c === c;
+                if (edge === 'left') return w.type === 'V' && w.r === r && w.c === c;
+                if (edge === 'right') return w.type === 'V' && w.r === r && w.c === c + 1;
+                return false;
+            });
+        }
+
+        canvas.addEventListener('click', (e) => {
+            if (gameOver) return;
 
             const rect = canvas.getBoundingClientRect();
-            const mouseX = e.clientX - rect.left;
-            const mouseY = e.clientY - rect.top;
+            const mx = e.clientX - rect.left;
+            const my = e.clientY - rect.top;
 
-            // Start condition: player must hover near the starting point first
-            if (!hasStarted) {
-                let startDist = Math.hypot(mouseX - pathPoints[0].x, mouseY - pathPoints[0].y);
-                if (startDist < pathWidth / 2) {
-                    hasStarted = true;
-                } else {
-                    return; // Ignore movements until they touch the start
+            let currentPlayer = (turn === 1) ? p1 : p2;
+
+            // 1. CHECK FOR PLAYER PIECE CLICK OR MOVEMENT CLICK
+            // Convert click coordinates to Row / Column index
+            let targetC = Math.floor((mx - offset) / cellSize);
+            let targetR = Math.floor((my - offset) / cellSize);
+
+            if (targetC >= 0 && targetC < gridSize && targetR >= 0 && targetR < gridSize) {
+                let dr = targetR - currentPlayer.r;
+                let dc = targetC - currentPlayer.c;
+
+                // Legal move: exactly 1 space orthoganally and no walls blocking
+                if (Math.abs(dr) + Math.abs(dc) === 1) {
+                    let blocked = false;
+                    if (dr === -1 && hasWall(currentPlayer.r, currentPlayer.c, 'top')) blocked = true;
+                    if (dr === 1 && hasWall(currentPlayer.r, currentPlayer.c, 'bottom')) blocked = true;
+                    if (dc === -1 && hasWall(currentPlayer.r, currentPlayer.c, 'left')) blocked = true;
+                    if (dc === 1 && hasWall(currentPlayer.r, currentPlayer.c, 'right')) blocked = true;
+
+                    if (!blocked) {
+                        currentPlayer.r = targetR;
+                        currentPlayer.c = targetC;
+                        checkWinConditions();
+                        if (!gameOver) switchTurn();
+                        return;
+                    }
                 }
             }
 
-            ball.x = mouseX;
-            ball.y = mouseY;
+            // 2. CHECK FOR WALL PLACEMENT CLICK (if player didn't move)
+            // Look for closest grid line intersect within proximity bounds
+            for (let r = 0; r <= gridSize; r++) {
+                for (let c = 0; c <= gridSize; c++) {
+                    let cx = offset + c * cellSize;
+                    let cy = offset + r * cellSize;
 
-            // Check Win Condition (Reached the last point area)
-            let finishPoint = pathPoints[pathPoints.length - 1];
-            let distToFinish = Math.hypot(ball.x - finishPoint.x, ball.y - finishPoint.y);
-            if (distToFinish <= ballRadius) {
-                endGame(true);
-                return;
-            }
-
-            // Check Lose Condition (Stepped off track limits)
-            if (!isBallOnPath(ball)) {
-                endGame(false);
+                    // Horizontal Line segment to the right of intersection point
+                    if (c < gridSize && Math.abs(my - cy) < clickTolerance && mx > cx && mx < cx + cellSize) {
+                        if (!walls.some(w => w.type === 'H' && w.r === r && w.c === c)) {
+                            walls.push({ type: 'H', r: r, c: c });
+                            switchTurn();
+                            return;
+                        }
+                    }
+                    // Vertical Line segment below intersection point
+                    if (r < gridSize && Math.abs(mx - cx) < clickTolerance && my > cy && my < cy + cellSize) {
+                        if (!walls.some(w => w.type === 'V' && w.r === r && w.c === c)) {
+                            walls.push({ type: 'V', r: r, c: c });
+                            switchTurn();
+                            return;
+                        }
+                    }
+                }
             }
         });
 
-        function endGame(isWin) {
-            gameActive = false;
-            overlay.style.display = 'block';
-            if (isWin) {
-                statusText.innerText = 'YOU WIN! 🎉';
-                statusText.style.color = '#4caf50';
-                actionBtn.innerText = 'Play Again';
-            } else {
-                statusText.innerText = 'GAME OVER 💥';
-                statusText.style.color = '#f44336';
-                actionBtn.innerText = 'Try Again';
+        function switchTurn() {
+            turn = (turn === 1) ? 2 : 1;
+            updateTurnUI();
+            draw();
+        }
+
+        function checkWinConditions() {
+            if (p1.r === gridSize - 1) { // Blue reached bottom row
+                endGame("PLAYER 1 (BLUE) WINS!");
+            } else if (p2.r === 0) { // Red reached top row
+                endGame("PLAYER 2 (RED) WINS!");
             }
         }
 
-        function resetGame() {
-            ball = { x: pathPoints[0].x, y: pathPoints[0].y };
-            gameActive = true;
-            hasStarted = false;
-            overlay.style.display = 'none';
+        function endGame(msg) {
+            gameOver = true;
+            winnerText.innerText = msg;
+            winnerText.style.color = (turn === 1) ? '#38b000' : '#e05780';
+            overlay.classList.add('show');
+            draw();
         }
 
-        // Core Render loop
         function draw() {
             ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-            // 1. Draw the track lines
-            ctx.beginPath();
-            ctx.strokeStyle = '#33334d';
-            ctx.lineWidth = pathWidth;
+            // Draw Goal Rows Background Indicators
+            ctx.fillStyle = 'rgba(56, 176, 0, 0.15)'; // Blue/Green goal bottom
+            ctx.fillRect(offset, offset + (gridSize - 1) * cellSize, gridSize * cellSize, cellSize);
+            ctx.fillStyle = 'rgba(224, 87, 128, 0.15)'; // Red/Pink goal top
+            ctx.fillRect(offset, offset, gridSize * cellSize, cellSize);
+
+            // Draw Inner Grid Gridlines (Passive borders)
+            ctx.strokeStyle = '#2d2d38';
+            ctx.lineWidth = 2;
+            for (let i = 0; i <= gridSize; i++) {
+                // Horizontals
+                ctx.beginPath();
+                ctx.moveTo(offset, offset + i * cellSize);
+                ctx.lineTo(offset + gridSize * cellSize, offset + i * cellSize);
+                ctx.stroke();
+                // Verticals
+                ctx.beginPath();
+                ctx.moveTo(offset + i * cellSize, offset);
+                ctx.lineTo(offset + i * cellSize, offset + gridSize * cellSize);
+                ctx.stroke();
+            }
+
+            // Draw Placed Blockades (Lines)
+            ctx.strokeStyle = '#ffb703';
+            ctx.lineWidth = wallThickness;
             ctx.lineCap = 'round';
-            ctx.lineJoin = 'round';
-            ctx.moveTo(pathPoints[0].x, pathPoints[0].y);
-            for (let i = 1; i < pathPoints.length; i++) {
-                ctx.lineTo(pathPoints[i].x, pathPoints[i].y);
-            }
-            ctx.stroke();
-
-            // 2. Draw Start Zone indicator
-            ctx.beginPath();
-            ctx.fillStyle = '#ff9800';
-            ctx.arc(pathPoints[0].x, pathPoints[0].y, pathWidth / 2, 0, Math.PI * 2);
-            ctx.fill();
-
-            // 3. Draw Finish Zone indicator
-            let finish = pathPoints[pathPoints.length - 1];
-            ctx.beginPath();
-            ctx.fillStyle = '#4caf50';
-            ctx.arc(finish.x, finish.y, pathWidth / 2, 0, Math.PI * 2);
-            ctx.fill();
-
-            // Text labels for Start and End
-            ctx.fillStyle = '#fff';
-            ctx.font = 'bold 12px sans-serif';
-            ctx.textAlign = 'center';
-            ctx.textBaseline = 'middle';
-            ctx.fillText('START', pathPoints[0].x, pathPoints[0].y);
-            ctx.fillText('WIN', finish.x, finish.y);
-
-            // 4. Draw the user-controlled Ball
-            ctx.beginPath();
-            ctx.fillStyle = hasStarted ? '#00adb5' : '#777';
-            ctx.arc(ball.x, ball.y, ballRadius, 0, Math.PI * 2);
-            ctx.shadowBlur = hasStarted ? 10 : 0;
-            ctx.shadowColor = '#00adb5';
-            ctx.fill();
-            ctx.shadowBlur = 0; // Reset shadow
-
-            // Helper text before initializing gameplay
-            if (!hasStarted && gameActive) {
-                ctx.fillStyle = '#ff9800';
-                ctx.font = '16px sans-serif';
-                ctx.fillText('👈 Hover your cursor here to Start!', pathPoints[0].x + 130, pathPoints[0].y + 5);
-            }
-
-            requestAnimationFrame(draw);
-        }
-
-        // Initialize display
-        draw();
-    </script>
-</body>
-</html>
+            walls.forEach(w => {
+                ctx.beginPath();
+                if (w.type === 'H') {
+                    ctx.moveTo(offset + w.c * cellSize, offset + w.r * cellSize);
+                    ctx.lineTo(offset + (w.c + 1) * cellSize, offset + w.r * cellSize);
+                } else {
