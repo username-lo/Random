@@ -40,8 +40,8 @@
             display: none;
         }
 
-        .p1-turn { color: #38b000; border: 2px solid #38b000; box-shadow: 0 0 10px rgba(56,176,0,0.3); }
-        .p2-turn { color: #e05780; border: 2px solid #e05780; box-shadow: 0 0 10px rgba(224,87,128,0.3); }
+        .p1-turn { color: #00f5ff; border: 2px solid #00f5ff; box-shadow: 0 0 10px rgba(0,245,255,0.3); }
+        .p2-turn { color: #ff2a6d; border: 2px solid #ff2a6d; box-shadow: 0 0 10px rgba(255,42,109,0.3); }
 
         #gameContainer { position: relative; display: none; }
         canvas {
@@ -125,19 +125,18 @@
         const setupActions = document.getElementById('setupActions');
         const joinIdInput = document.getElementById('joinIdInput');
 
-        // Grid Design Setup
+        // Grid Setup
         const gridSize = 7;
         const cellSize = 70;
         const offset = 55;
         const wallThickness = 8;
         const clickTolerance = 15;
 
-        // Multiplayer state vars
+        // Multiplayer state
         let peer, conn;
-        let myRole = null; // 'P1' (Host) or 'P2' (Joiner)
+        let myRole = null; 
         let p1, p2, turn, walls, gameOver;
 
-        // Initialize Networking First
         peer = new Peer();
         
         peer.on('open', (id) => {
@@ -149,7 +148,6 @@
             alert("Network error: " + err.type);
         });
 
-        // 1. HOST SIDE LOGIC
         function hostGame() {
             myRole = 'P1';
             lobbyStatus.innerHTML = `Room Created! Send this ID to your friend:<br><b style='color:#00f5ff; font-size:18px;'>${peer.id}</b><br><br>Waiting for them to join...`;
@@ -162,7 +160,6 @@
             });
         }
 
-        // 2. JOINER SIDE LOGIC
         function joinGame() {
             const targetId = joinIdInput.value.trim();
             if (!targetId) return alert("Please paste a valid Room ID");
@@ -179,7 +176,6 @@
             });
         }
 
-        // 3. SYNC DATA BETWEEN BROWSERS
         function setupNetworkHandlers() {
             conn.on('data', (data) => {
                 if (data.type === 'move') {
@@ -211,7 +207,7 @@
         function initGameState() {
             p1 = { r: 0, c: 3 };
             p2 = { r: gridSize - 1, c: 3 };
-            turn = 1; // P1 always goes first
+            turn = 1; 
             walls = [];
             gameOver = false;
             
@@ -230,7 +226,7 @@
             } else {
                 turnIndicator.innerText = `Opponent's Turn (${roleName}). Waiting...`;
             }
-            turnIndicator.className = turnIndicator.className = roleColorClass;
+            turnIndicator.className = roleColorClass;
         }
 
         function sendState() {
@@ -272,7 +268,7 @@
 
             let currentPlayer = (turn === 1) ? p1 : p2;
 
-            // Tile grid selection detection
+            // Player piece movement logic
             let targetC = Math.floor((mx - offset) / cellSize);
             let targetR = Math.floor((my - offset) / cellSize);
 
@@ -285,3 +281,11 @@
                     if (dr === -1 && hasWall(currentPlayer.r, currentPlayer.c, 'top')) blocked = true;
                     if (dr === 1 && hasWall(currentPlayer.r, currentPlayer.c, 'bottom')) blocked = true;
                     if (dc === -1 && hasWall(currentPlayer.r, currentPlayer.c, 'left')) blocked = true;
+                    if (dc === 1 && hasWall(currentPlayer.r, currentPlayer.c, 'right')) blocked = true;
+
+                    if (!blocked) {
+                        currentPlayer.r = targetR;
+                        currentPlayer.c = targetC;
+                        checkWinConditions();
+                        if (!gameOver) turn = (turn === 1) ? 2 : 1;
+
