@@ -2,17 +2,77 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=2.0">
-    <title>My First Web Page</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Live Shared Editing</title>
+    <!-- Include GunDB for real-time multiplayer data syncing -->
+    <script src="https://jsdelivr.net"></script>
+    <style>
+        body {
+            font-family: system-ui, -apple-system, sans-serif;
+            margin: 40px;
+            background-color: #f9f9f9;
+            color: #333;
+        }
+        /* Style the editable area so it fills the screen and feels like a canvas */
+        #shared-canvas {
+            min-height: 80vh;
+            padding: 20px;
+            border: 2px dashed #ccc;
+            border-radius: 8px;
+            background-color: #ffffff;
+            outline: none;
+            font-size: 1.2rem;
+            line-height: 1.6;
+        }
+        #shared-canvas:focus {
+            border-color: #0066cc;
+            box-shadow: 0 0 8px rgba(0, 102, 204, 0.2);
+        }
+        .info-bar {
+            margin-bottom: 20px;
+            font-size: 0.9rem;
+            color: #666;
+        }
+    </style>
 </head>
 <body>
 
-    <h1>Welcome to My Website</h1>
-    <p>This is a simple paragraph of text on a web page.</p>
+    <h1>🌐 Live Shared Webpage</h1>
+    <div class="info-bar">💡 <strong>Click anywhere inside the box below and type.</strong> Anyone who opens this page will see your edits live!</div>
 
-    <!-- This is a comment. It won't show up on the page -->
-    <a href="https://example.com">Visit an Example Link</a>
+    <!-- contenteditable="true" allows users to click and type directly into this div -->
+    <div id="shared-canvas" contenteditable="true">
+        Loading shared content...
+    </div>
+
+    <script>
+        // 1. Initialize GunDB with public community relay servers
+        const gun = Gun([
+            'https://herokuapp.com',
+            'https://peer.ooo'
+        ]);
+        
+        // 2. Reference a specific database node key for this webpage
+        const pageData = gun.get('shared-editable-webpage-2026');
+        const canvas = document.getElementById('shared-canvas');
+
+        // 3. LISTEN: When someone else updates the database, update our screen
+        pageData.on((data) => {
+            if (data && data.text !== undefined) {
+                // Only update if the content is actually different to avoid cursor jumping
+                if (canvas.innerHTML !== data.text) {
+                    canvas.innerHTML = data.text;
+                }
+            }
+        });
+
+        // 4. BROADCAST: When a user types, instantly save it to the database
+        canvas.addEventListener('input', () => {
+            pageData.put({ text: canvas.innerHTML });
+        });
+    </script>
 
 </body>
 </html>
+
 
