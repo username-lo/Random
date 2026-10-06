@@ -1,474 +1,266 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Riddle Master</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Line Follower Game</title>
+    <style>
+        body {
+            margin: 0;
+            background: #1a1a1a;
+            color: #fff;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            overflow: hidden;
+        }
 
-<style>
-* {
-    box-sizing: border-box;
-}
+        h1 {
+            margin: 5px 0;
+            font-size: 24px;
+            letter-spacing: 1px;
+        }
 
-body {
-    margin: 0;
-    font-family: Arial, sans-serif;
-    background: #0b1020;
-    color: white;
-    min-height: 100vh;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-}
+        p {
+            margin: 0 0 15px 0;
+            color: #aaa;
+            font-size: 14px;
+        }
 
-.game {
-    width: 95%;
-    max-width: 700px;
-    background: #151c35;
-    border-radius: 22px;
-    padding: 30px;
-    box-shadow: 0 0 40px rgba(0,0,0,.5);
-}
+        #gameContainer {
+            position: relative;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            border-radius: 8px;
+            overflow: hidden;
+        }
 
-h1 {
-    text-align: center;
-    margin-top: 0;
-    font-size: 38px;
-}
+        canvas {
+            background: #222;
+            display: block;
+            cursor: none; /* Hide real cursor over the game */
+        }
 
-.subtitle {
-    text-align: center;
-    color: #aab4d6;
-}
+        #statusOverlay {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            text-align: center;
+            background: rgba(0, 0, 0, 0.85);
+            padding: 20px 40px;
+            border-radius: 10px;
+            border: 2px solid #444;
+            display: none;
+        }
 
-.stats {
-    display: flex;
-    justify-content: space-between;
-    margin: 20px 0;
-    color: #cbd4f5;
-}
+        #statusText {
+            font-size: 28px;
+            font-weight: bold;
+            margin-bottom: 15px;
+        }
 
-.progress {
-    height: 10px;
-    background: #292f4a;
-    border-radius: 10px;
-    overflow: hidden;
-    margin-bottom: 25px;
-}
+        button {
+            background: #00adb5;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            font-size: 16px;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
 
-.progress-bar {
-    height: 100%;
-    width: 10%;
-    background: #6c63ff;
-    transition: .4s;
-}
-
-.level {
-    text-align: center;
-    color: #8f88ff;
-    font-weight: bold;
-}
-
-.riddle {
-    font-size: 24px;
-    line-height: 1.5;
-    text-align: center;
-    margin: 30px 10px;
-}
-
-input {
-    width: 100%;
-    padding: 15px;
-    border: none;
-    border-radius: 12px;
-    background: #252d4b;
-    color: white;
-    font-size: 18px;
-    outline: none;
-}
-
-input:focus {
-    box-shadow: 0 0 0 2px #6c63ff;
-}
-
-button {
-    width: 100%;
-    padding: 14px;
-    margin-top: 12px;
-    border: none;
-    border-radius: 12px;
-    background: #6c63ff;
-    color: white;
-    font-size: 17px;
-    font-weight: bold;
-    cursor: pointer;
-    transition: .2s;
-}
-
-button:hover {
-    transform: scale(1.02);
-    background: #7b73ff;
-}
-
-.hint {
-    background: #303858;
-}
-
-.message {
-    min-height: 30px;
-    text-align: center;
-    margin-top: 18px;
-    font-weight: bold;
-}
-
-.correct {
-    color: #55e69b;
-}
-
-.wrong {
-    color: #ff6b6b;
-}
-
-.hint-text {
-    color: #ffd166;
-    text-align: center;
-    margin-top: 15px;
-}
-
-#nextBtn {
-    display: none;
-    background: #22b573;
-}
-
-#restartBtn {
-    display: none;
-    background: #ff5c5c;
-}
-
-.final {
-    text-align: center;
-    display: none;
-}
-
-.final h2 {
-    font-size: 40px;
-    color: #55e69b;
-}
-
-.score {
-    font-size: 25px;
-    margin: 20px;
-}
-</style>
+        button:hover {
+            background: #00f5ff;
+        }
+    </style>
 </head>
-
 <body>
 
-<div class="game">
+    <h1>Line & Ball Game</h1>
+    <p>Guide the ball carefully along the track to the green zone. Don't fall off!</p>
 
-    <div id="gameScreen">
-
-        <h1>🧠 Riddle Master</h1>
-        <p class="subtitle">Only the smartest will reach Level 10.</p>
-
-        <div class="stats">
-            <span>❤️ Lives: <b id="lives">3</b></span>
-            <span>⭐ Score: <b id="score">0</b></span>
-            <span>🏆 Level: <b id="levelNumber">1</b>/10</span>
+    <div id="gameContainer">
+        <canvas id="gameCanvas" width="800" height="500"></canvas>
+        <div id="statusOverlay">
+            <div id="statusText">YOU WIN!</div>
+            <button id="actionBtn" onclick="resetGame()">Play Again</button>
         </div>
-
-        <div class="progress">
-            <div class="progress-bar" id="progress"></div>
-        </div>
-
-        <div class="level" id="levelTitle">LEVEL 1</div>
-
-        <div class="riddle" id="riddle"></div>
-
-        <input
-            id="answer"
-            type="text"
-            placeholder="Type your answer..."
-            autocomplete="off"
-        >
-
-        <button onclick="checkAnswer()">SUBMIT ANSWER</button>
-
-        <button class="hint" onclick="showHint()">💡 USE HINT</button>
-
-        <div class="hint-text" id="hint"></div>
-
-        <div class="message" id="message"></div>
-
-        <button id="nextBtn" onclick="nextLevel()">NEXT LEVEL ➜</button>
-
-        <button id="restartBtn" onclick="restartGame()">🔄 PLAY AGAIN</button>
-
     </div>
 
-    <div class="final" id="finalScreen">
-        <h2>🏆 YOU WON!</h2>
+    <script>
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        const overlay = document.getElementById('statusOverlay');
+        const statusText = document.getElementById('statusText');
+        const actionBtn = document.getElementById('actionBtn');
 
-        <p>You solved every riddle.</p>
+        // Game Configuration
+        const pathWidth = 40; 
+        const ballRadius = 10;
+        
+        // Define the track checkpoints (centers of the line segments)
+        const pathPoints = [
+            {x: 50, y: 250},
+            {x: 200, y: 250},
+            {x: 200, y: 100},
+            {x: 450, y: 100},
+            {x: 450, y: 400},
+            {x: 650, y: 400},
+            {x: 650, y: 250},
+            {x: 750, y: 250}
+        ];
 
-        <div class="score">
-            Final Score: <b id="finalScore">0</b>
-        </div>
+        let ball = { x: 50, y: 250 };
+        let gameActive = true;
+        let hasStarted = false;
 
-        <p>You're officially a RIDDLE MASTER.</p>
-
-        <button onclick="restartGame()">🔄 PLAY AGAIN</button>
-    </div>
-
-</div>
-
-<script>
-
-const riddles = [
-
-    {
-        title: "LEVEL 1",
-        question: "I have keys but no locks. I have space but no room. You can enter, but you can't go inside. What am I?",
-        answers: ["keyboard"],
-        hint: "You probably use one to type."
-    },
-
-    {
-        title: "LEVEL 2",
-        question: "The more you take away from me, the bigger I become. What am I?",
-        answers: ["hole", "a hole"],
-        hint: "Think about digging."
-    },
-
-    {
-        title: "LEVEL 3",
-        question: "I speak without a mouth and hear without ears. I have no body, but I come alive with wind. What am I?",
-        answers: ["echo", "an echo"],
-        hint: "You might hear me in mountains."
-    },
-
-    {
-        title: "LEVEL 4",
-        question: "I am always in front of you, but can never be seen. What am I?",
-        answers: ["future", "the future"],
-        hint: "You haven't reached me yet."
-    },
-
-    {
-        title: "LEVEL 5",
-        question: "I have cities but no houses, forests but no trees, and rivers but no water. What am I?",
-        answers: ["map", "a map", "the map"],
-        hint: "You might use me when traveling."
-    },
-
-    {
-        title: "LEVEL 6",
-        question: "What disappears as soon as you say its name?",
-        answers: ["silence", "the silence"],
-        hint: "It exists when nobody is talking."
-    },
-
-    {
-        title: "LEVEL 7",
-        question: "I can be cracked, made, told, and played. What am I?",
-        answers: ["joke", "a joke"],
-        hint: "People laugh at me."
-    },
-
-    {
-        title: "LEVEL 8",
-        question: "I am lighter than a feather, but nobody can hold me for long. What am I?",
-        answers: ["breath", "air", "a breath"],
-        hint: "You do it automatically."
-    },
-
-    {
-        title: "LEVEL 9",
-        question: "A man looks at a picture and says: 'Brothers and sisters, I have none. But that man's father is my father's son.' Who is in the picture?",
-        answers: ["his son", "son", "the man's son"],
-        hint: "Remember: he has no brothers or sisters."
-    },
-
-    {
-        title: "LEVEL 10",
-        question: "You have three switches downstairs. One controls a light bulb upstairs. You may switch them however you want, but you can go upstairs only once. How do you determine which switch controls the bulb?",
-        answers: ["use heat", "turn one on", "heat", "use the bulb's heat"],
-        hint: "The bulb can tell you something even when it is turned off."
-    }
-
-];
-
-let currentLevel = 0;
-let lives = 3;
-let score = 0;
-let hintUsed = false;
-
-const riddle = document.getElementById("riddle");
-const answer = document.getElementById("answer");
-const message = document.getElementById("message");
-const hint = document.getElementById("hint");
-const livesText = document.getElementById("lives");
-const scoreText = document.getElementById("score");
-const levelNumber = document.getElementById("levelNumber");
-const levelTitle = document.getElementById("levelTitle");
-const progress = document.getElementById("progress");
-const nextBtn = document.getElementById("nextBtn");
-const restartBtn = document.getElementById("restartBtn");
-
-function loadLevel() {
-
-    const level = riddles[currentLevel];
-
-    riddle.textContent = level.question;
-    levelTitle.textContent = level.title;
-
-    levelNumber.textContent = currentLevel + 1;
-
-    progress.style.width =
-        ((currentLevel + 1) / riddles.length * 100) + "%";
-
-    answer.value = "";
-    hint.textContent = "";
-    message.textContent = "";
-
-    nextBtn.style.display = "none";
-
-    hintUsed = false;
-
-    answer.focus();
-}
-
-function normalize(text) {
-    return text
-        .toLowerCase()
-        .trim()
-        .replace(/[.,!?']/g, "");
-}
-
-function checkAnswer() {
-
-    const userAnswer = normalize(answer.value);
-
-    if (!userAnswer) {
-        message.textContent = "Type an answer first!";
-        message.className = "message wrong";
-        return;
-    }
-
-    const correctAnswers = riddles[currentLevel].answers;
-
-    const correct = correctAnswers.some(
-        a => normalize(a) === userAnswer
-    );
-
-    if (correct) {
-
-        let points = 100;
-
-        if (!hintUsed) {
-            points += 50;
+        // Check distance from a point to a line segment
+        function getDistanceToSegment(p, a, b) {
+            let ab = { x: b.x - a.x, y: b.y - a.y };
+            let ap = { x: p.x - a.x, y: p.y - a.y };
+            let abLenSq = ab.x * ab.x + ab.y * ab.y;
+            
+            if (abLenSq === 0) return Math.sqrt(ap.x * ap.x + ap.y * ap.y);
+            
+            // Project p onto ab, clamp to segment bounds
+            let t = (ap.x * ab.x + ap.y * ab.y) / abLenSq;
+            t = Math.max(0, Math.min(1, t));
+            
+            let closest = { x: a.x + t * ab.x, y: a.y + t * ab.y };
+            let dx = p.x - closest.x;
+            let dy = p.y - closest.y;
+            
+            return Math.sqrt(dx * dx + dy * dy);
         }
 
-        score += points;
-
-        scoreText.textContent = score;
-
-        message.textContent =
-            "✅ CORRECT! +" + points + " points";
-
-        message.className = "message correct";
-
-        nextBtn.style.display = "block";
-
-        answer.disabled = true;
-
-    } else {
-
-        lives--;
-
-        livesText.textContent = lives;
-
-        message.textContent =
-            "❌ Wrong answer!";
-
-        message.className = "message wrong";
-
-        if (lives <= 0) {
-
-            message.textContent =
-                "💀 Game Over! The answer was: " +
-                riddles[currentLevel].answers[0];
-
-            restartBtn.style.display = "block";
-
-            answer.disabled = true;
-
+        // Verify if ball position is legally inside the track bounds
+        function isBallOnPath(p) {
+            for (let i = 0; i < pathPoints.length - 1; i++) {
+                if (getDistanceToSegment(p, pathPoints[i], pathPoints[i+1]) <= (pathWidth / 2)) {
+                    return true;
+                }
+            }
+            return false;
         }
-    }
-}
 
-function showHint() {
+        // Track mouse movements to update ball placement
+        canvas.addEventListener('mousemove', (e) => {
+            if (!gameActive) return;
 
-    if (hintUsed) {
-        return;
-    }
+            const rect = canvas.getBoundingClientRect();
+            const mouseX = e.clientX - rect.left;
+            const mouseY = e.clientY - rect.top;
 
-    hintUsed = true;
+            // Start condition: player must hover near the starting point first
+            if (!hasStarted) {
+                let startDist = Math.hypot(mouseX - pathPoints[0].x, mouseY - pathPoints[0].y);
+                if (startDist < pathWidth / 2) {
+                    hasStarted = true;
+                } else {
+                    return; // Ignore movements until they touch the start
+                }
+            }
 
-    hint.textContent =
-        "💡 Hint: " + riddles[currentLevel].hint;
-}
+            ball.x = mouseX;
+            ball.y = mouseY;
 
-function nextLevel() {
+            // Check Win Condition (Reached the last point area)
+            let finishPoint = pathPoints[pathPoints.length - 1];
+            let distToFinish = Math.hypot(ball.x - finishPoint.x, ball.y - finishPoint.y);
+            if (distToFinish <= ballRadius) {
+                endGame(true);
+                return;
+            }
 
-    currentLevel++;
+            // Check Lose Condition (Stepped off track limits)
+            if (!isBallOnPath(ball)) {
+                endGame(false);
+            }
+        });
 
-    if (currentLevel >= riddles.length) {
+        function endGame(isWin) {
+            gameActive = false;
+            overlay.style.display = 'block';
+            if (isWin) {
+                statusText.innerText = 'YOU WIN! 🎉';
+                statusText.style.color = '#4caf50';
+                actionBtn.innerText = 'Play Again';
+            } else {
+                statusText.innerText = 'GAME OVER 💥';
+                statusText.style.color = '#f44336';
+                actionBtn.innerText = 'Try Again';
+            }
+        }
 
-        document.getElementById("gameScreen").style.display = "none";
+        function resetGame() {
+            ball = { x: pathPoints[0].x, y: pathPoints[0].y };
+            gameActive = true;
+            hasStarted = false;
+            overlay.style.display = 'none';
+        }
 
-        document.getElementById("finalScreen").style.display = "block";
+        // Core Render loop
+        function draw() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-        document.getElementById("finalScore").textContent = score;
+            // 1. Draw the track lines
+            ctx.beginPath();
+            ctx.strokeStyle = '#33334d';
+            ctx.lineWidth = pathWidth;
+            ctx.lineCap = 'round';
+            ctx.lineJoin = 'round';
+            ctx.moveTo(pathPoints[0].x, pathPoints[0].y);
+            for (let i = 1; i < pathPoints.length; i++) {
+                ctx.lineTo(pathPoints[i].x, pathPoints[i].y);
+            }
+            ctx.stroke();
 
-        return;
-    }
+            // 2. Draw Start Zone indicator
+            ctx.beginPath();
+            ctx.fillStyle = '#ff9800';
+            ctx.arc(pathPoints[0].x, pathPoints[0].y, pathWidth / 2, 0, Math.PI * 2);
+            ctx.fill();
 
-    answer.disabled = false;
+            // 3. Draw Finish Zone indicator
+            let finish = pathPoints[pathPoints.length - 1];
+            ctx.beginPath();
+            ctx.fillStyle = '#4caf50';
+            ctx.arc(finish.x, finish.y, pathWidth / 2, 0, Math.PI * 2);
+            ctx.fill();
 
-    loadLevel();
-}
+            // Text labels for Start and End
+            ctx.fillStyle = '#fff';
+            ctx.font = 'bold 12px sans-serif';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText('START', pathPoints[0].x, pathPoints[0].y);
+            ctx.fillText('WIN', finish.x, finish.y);
 
-function restartGame() {
+            // 4. Draw the user-controlled Ball
+            ctx.beginPath();
+            ctx.fillStyle = hasStarted ? '#00adb5' : '#777';
+            ctx.arc(ball.x, ball.y, ballRadius, 0, Math.PI * 2);
+            ctx.shadowBlur = hasStarted ? 10 : 0;
+            ctx.shadowColor = '#00adb5';
+            ctx.fill();
+            ctx.shadowBlur = 0; // Reset shadow
 
-    currentLevel = 0;
-    lives = 3;
-    score = 0;
+            // Helper text before initializing gameplay
+            if (!hasStarted && gameActive) {
+                ctx.fillStyle = '#ff9800';
+                ctx.font = '16px sans-serif';
+                ctx.fillText('👈 Hover your cursor here to Start!', pathPoints[0].x + 130, pathPoints[0].y + 5);
+            }
 
-    livesText.textContent = lives;
-    scoreText.textContent = score;
+            requestAnimationFrame(draw);
+        }
 
-    document.getElementById("gameScreen").style.display = "block";
-    document.getElementById("finalScreen").style.display = "none";
-
-    restartBtn.style.display = "none";
-
-    answer.disabled = false;
-
-    loadLevel();
-}
-
-answer.addEventListener("keydown", function(event) {
-
-    if (event.key === "Enter") {
-        checkAnswer();
-    }
-
-});
-
-loadLevel();
-
-</script>
-
+        // Initialize display
+        draw();
+    </script>
 </body>
 </html>
