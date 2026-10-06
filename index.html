@@ -1,291 +1,243 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Online Multiplayer Grid Racer</title>
-    <!-- Include PeerJS for free Peer-to-Peer multiplayer networking -->
-    <script src="https://unpkg.com"></script>
-    <style>
-        body {
-            margin: 0;
-            background: #1e1e24;
-            color: #fff;
-            font-family: 'Segoe UI', system-ui, sans-serif;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            min-height: 100vh;
-        }
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>The Totally Useless Website 🍌</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Bagel+Fat+One&family=DM+Sans:wght@500;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --banana: #FFE14D;
+    --bubblegum: #FF6FB5;
+    --grape: #5B2EFF;
+    --mint: #3DDC97;
+    --ink: #1B1030;
+  }
+  * { box-sizing: border-box; margin: 0; }
+  html, body { min-height: 100%; }
+  body {
+    font-family: "DM Sans", system-ui, sans-serif;
+    background: var(--banana);
+    background-image: radial-gradient(var(--ink) 1.5px, transparent 1.5px);
+    background-size: 28px 28px;
+    color: var(--ink);
+    overflow-x: hidden;
+    text-align: center;
+    padding: 24px 16px 80px;
+  }
+  h1 {
+    font-family: "Bagel Fat One", "Arial Black", sans-serif;
+    font-size: clamp(2.6rem, 10vw, 6rem);
+    line-height: 1;
+    margin-top: 28px;
+    color: var(--grape);
+    text-shadow: 4px 4px 0 var(--ink);
+    transform: rotate(-2deg);
+  }
+  .sub { margin: 18px auto 0; max-width: 34ch; font-weight: 700; font-size: 1.15rem; }
 
-        h1 { margin: 10px 0 5px 0; font-size: 26px; }
-        
-        #lobby {
-            background: #2a2a35;
-            padding: 20px;
-            border-radius: 8px;
-            margin-bottom: 15px;
-            text-align: center;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.3);
-        }
+  .card {
+    background: #fff;
+    border: 4px solid var(--ink);
+    border-radius: 22px;
+    box-shadow: 8px 8px 0 var(--ink);
+    max-width: 520px;
+    margin: 36px auto 0;
+    padding: 24px;
+  }
+  .card h2 { font-family: "Bagel Fat One", sans-serif; font-size: 1.6rem; margin-bottom: 12px; }
 
-        #turnIndicator {
-            font-size: 18px;
-            margin-bottom: 15px;
-            font-weight: bold;
-            padding: 8px 16px;
-            border-radius: 20px;
-            background: #2a2a35;
-            display: none;
-        }
+  /* Runaway button zone */
+  #arena { position: relative; height: 170px; }
+  #runaway {
+    position: absolute; left: 50%; top: 50%;
+    transform: translate(-50%, -50%);
+    font: inherit; font-weight: 700; font-size: 1.2rem;
+    background: var(--bubblegum); color: var(--ink);
+    border: 4px solid var(--ink); border-radius: 999px;
+    padding: 14px 26px; cursor: pointer;
+    box-shadow: 4px 4px 0 var(--ink);
+    transition: left .18s ease-out, top .18s ease-out, background .2s;
+    white-space: nowrap;
+  }
+  #runaway.tired { background: var(--mint); }
+  #taunt { min-height: 1.5em; margin-top: 8px; font-weight: 700; }
 
-        .p1-turn { color: #00f5ff; border: 2px solid #00f5ff; box-shadow: 0 0 10px rgba(0,245,255,0.3); }
-        .p2-turn { color: #ff2a6d; border: 2px solid #ff2a6d; box-shadow: 0 0 10px rgba(255,42,109,0.3); }
+  /* Joke machine */
+  #joke { min-height: 4.5em; font-size: 1.1rem; font-weight: 700; display: grid; place-items: center; }
+  .btn {
+    font: inherit; font-weight: 700; font-size: 1.05rem;
+    background: var(--grape); color: #fff;
+    border: 4px solid var(--ink); border-radius: 14px;
+    padding: 10px 20px; cursor: pointer;
+    box-shadow: 4px 4px 0 var(--ink);
+    transition: transform .08s, box-shadow .08s;
+  }
+  .btn:active { transform: translate(3px, 3px); box-shadow: 1px 1px 0 var(--ink); }
+  .btn:focus-visible, #runaway:focus-visible { outline: 4px solid var(--ink); outline-offset: 4px; }
 
-        #gameContainer { position: relative; display: none; }
-        canvas {
-            background: #111116;
-            border-radius: 8px;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.7);
-            display: block;
-        }
+  /* Pointless clicker */
+  #pet { font-size: 6rem; cursor: pointer; user-select: none; display: inline-block; transition: transform .1s; }
+  #pet:active { transform: scale(.85) rotate(-8deg); }
+  #count { font-weight: 700; margin-top: 6px; }
 
-        #overlay {
-            position: absolute;
-            top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0,0,0,0.85);
-            border-radius: 8px;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            opacity: 0;
-            pointer-events: none;
-            transition: opacity 0.4s;
-        }
-        #overlay.show { opacity: 1; pointer-events: auto; }
-        #winnerText { font-size: 36px; font-weight: bold; margin-bottom: 20px; }
-        
-        button {
-            background: #4a4ae2;
-            color: white;
-            border: none;
-            padding: 10px 20px;
-            font-size: 14px;
-            font-weight: bold;
-            border-radius: 6px;
-            cursor: pointer;
-            margin: 5px;
-        }
-        button:hover { background: #6363f7; }
-        input {
-            padding: 10px;
-            font-size: 14px;
-            border-radius: 6px;
-            border: 1px solid #444;
-            background: #111;
-            color: #fff;
-            width: 200px;
-            text-align: center;
-        }
-    </style>
+  /* Emoji rain + cursor follower */
+  .drop { position: fixed; top: -50px; font-size: 2rem; pointer-events: none; z-index: 50; animation: fall linear forwards; }
+  @keyframes fall { to { transform: translateY(115vh) rotate(720deg); } }
+  #follower { position: fixed; pointer-events: none; z-index: 40; font-size: 1.8rem; left: 0; top: 0; transition: transform .12s ease-out; }
+
+  footer { margin-top: 40px; font-weight: 700; }
+  @media (prefers-reduced-motion: reduce) {
+    .drop { animation-duration: 0.01s !important; }
+    #runaway { transition: none; }
+  }
+</style>
 </head>
 <body>
 
-    <h1>Grid Line Racer (Online)</h1>
-    
-    <div id="lobby">
-        <div id="lobbyStatus">Initializing network...</div>
-        <div id="setupActions" style="margin-top: 15px; display:none;">
-            <button onclick="hostGame()">Host Game</button>
-            <span style="margin: 0 10px;">or</span>
-            <input type="text" id="joinIdInput" placeholder="Paste Room ID here">
-            <button onclick="joinGame()">Join Game</button>
-        </div>
-    </div>
+<div id="follower" aria-hidden="true">🍌</div>
 
-    <div id="turnIndicator">Waiting for players...</div>
+<h1>The Totally Useless Website</h1>
+<p class="sub">Nothing here will improve your life. You're welcome.</p>
 
-    <div id="gameContainer">
-        <canvas id="gameCanvas" width="600" height="600"></canvas>
-        <div id="overlay">
-            <div id="winnerText">PLAYER 1 WINS!</div>
-            <button onclick="restartMatch()">Rematch</button>
-        </div>
-    </div>
+<section class="card">
+  <h2>Press the button</h2>
+  <div id="arena">
+    <button id="runaway">Click me, I dare you</button>
+  </div>
+  <p id="taunt">Easy, right?</p>
+</section>
 
-    <script>
-        const canvas = document.getElementById('gameCanvas');
-        const ctx = canvas.getContext('2d');
-        const turnIndicator = document.getElementById('turnIndicator');
-        const overlay = document.getElementById('overlay');
-        const winnerText = document.getElementById('winnerText');
-        const lobbyStatus = document.getElementById('lobbyStatus');
-        const setupActions = document.getElementById('setupActions');
-        const joinIdInput = document.getElementById('joinIdInput');
+<section class="card">
+  <h2>Dad joke machine</h2>
+  <div id="joke">Press the button. Brace yourself.</div>
+  <br>
+  <button class="btn" id="jokeBtn">Hit me with a joke</button>
+</section>
 
-        // Grid Setup
-        const gridSize = 7;
-        const cellSize = 70;
-        const offset = 55;
-        const wallThickness = 8;
-        const clickTolerance = 15;
+<section class="card">
+  <h2>Pet the potato</h2>
+  <div id="pet" role="button" tabindex="0" aria-label="Pet the potato">🥔</div>
+  <p id="count">Pets: 0. The potato has no opinion.</p>
+</section>
 
-        // Multiplayer state
-        let peer, conn;
-        let myRole = null; 
-        let p1, p2, turn, walls, gameOver;
+<footer>Made with 🍌 and questionable decisions. Try the Konami code: ↑ ↑ ↓ ↓ ← → ← → B A</footer>
 
-        peer = new Peer();
-        
-        peer.on('open', (id) => {
-            lobbyStatus.innerText = "Ready to connect!";
-            setupActions.style.display = "block";
-        });
+<script>
+  // ---------- Emoji rain ----------
+  function rain(emojis, amount = 40) {
+    for (let i = 0; i < amount; i++) {
+      const d = document.createElement("div");
+      d.className = "drop";
+      d.textContent = emojis[Math.floor(Math.random() * emojis.length)];
+      d.style.left = Math.random() * 100 + "vw";
+      d.style.animationDuration = 2 + Math.random() * 2.5 + "s";
+      d.style.animationDelay = Math.random() * 0.8 + "s";
+      document.body.appendChild(d);
+      setTimeout(() => d.remove(), 6000);
+    }
+  }
 
-        peer.on('error', (err) => {
-            alert("Network error: " + err.type);
-        });
+  // ---------- Runaway button ----------
+  const btn = document.getElementById("runaway");
+  const arena = document.getElementById("arena");
+  const taunt = document.getElementById("taunt");
+  const taunts = [
+    "Too slow!", "Nope.", "Nice try.", "Almost!", "Is that all you've got?",
+    "Have you tried being faster?", "I'm fast. Like, really fast.",
+    "You'll never catch me.", "Whoa, that was close."
+  ];
+  let dodges = 0;
+  const MAX_DODGES = 9;
 
-        function hostGame() {
-            myRole = 'P1';
-            lobbyStatus.innerHTML = `Room Created! Send this ID to your friend:<br><b style='color:#00f5ff; font-size:18px;'>${peer.id}</b><br><br>Waiting for them to join...`;
-            setupActions.style.display = "none";
+  function dodge() {
+    if (dodges >= MAX_DODGES) return;
+    dodges++;
+    const a = arena.getBoundingClientRect();
+    const b = btn.getBoundingClientRect();
+    const x = Math.random() * (a.width - b.width) + b.width / 2;
+    const y = Math.random() * (a.height - b.height) + b.height / 2;
+    btn.style.left = x + "px";
+    btn.style.top = y + "px";
+    taunt.textContent = taunts[Math.floor(Math.random() * taunts.length)];
+    if (dodges === MAX_DODGES) {
+      btn.classList.add("tired");
+      btn.textContent = "Fine. You win.";
+      taunt.textContent = "I'm exhausted. Go ahead.";
+    }
+  }
+  btn.addEventListener("pointerenter", dodge);
+  btn.addEventListener("touchstart", (e) => { if (dodges < MAX_DODGES) { e.preventDefault(); dodge(); } }, { passive: false });
+  btn.addEventListener("click", () => {
+    if (dodges < MAX_DODGES) return dodge();
+    taunt.textContent = "You did it! Nobody cares, but congrats! 🎉";
+    rain(["🎉", "🍌", "🦄", "🍕", "✨", "🥳"], 60);
+  });
 
-            peer.on('connection', (connection) => {
-                conn = connection;
-                setupNetworkHandlers();
-                startGameSession();
-            });
-        }
+  // ---------- Dad jokes ----------
+  const jokes = [
+    "I told my computer I needed a break. Now it won't stop sending me Kit-Kat ads.",
+    "Why do programmers prefer dark mode? Because light attracts bugs.",
+    "I would tell you a UDP joke, but you might not get it.",
+    "There are 10 kinds of people: those who understand binary and those who don't.",
+    "Why did the developer go broke? He used up all his cache.",
+    "A SQL query walks into a bar, sees two tables, and asks: can I join you?",
+    "My code doesn't have bugs. It just develops random features.",
+    "Why was the JavaScript developer sad? He didn't Node how to Express himself.",
+    "I'd tell you a joke about the cloud, but it might be over your head.",
+    "It works on my machine. Ship my machine."
+  ];
+  let lastJoke = -1;
+  document.getElementById("jokeBtn").addEventListener("click", () => {
+    let i;
+    do { i = Math.floor(Math.random() * jokes.length); } while (i === lastJoke);
+    lastJoke = i;
+    document.getElementById("joke").textContent = jokes[i];
+    rain(["😂", "🤣"], 6);
+  });
 
-        function joinGame() {
-            const targetId = joinIdInput.value.trim();
-            if (!targetId) return alert("Please paste a valid Room ID");
-            
-            myRole = 'P2';
-            lobbyStatus.innerText = "Connecting to host...";
-            setupActions.style.display = "none";
+  // ---------- Pet the potato ----------
+  const pet = document.getElementById("pet");
+  const count = document.getElementById("count");
+  const moods = [
+    [0, "The potato has no opinion."],
+    [5, "The potato is... warming up to you."],
+    [15, "The potato is thriving. Look at that glow."],
+    [30, "The potato is now emotionally attached."],
+    [60, "The potato has named you its best friend."],
+    [100, "The potato has ascended. 👑"]
+  ];
+  const faces = ["🥔", "😊🥔", "🥔", "🥔✨"];
+  let pets = 0;
+  function petIt() {
+    pets++;
+    const mood = [...moods].reverse().find(m => pets >= m[0])[1];
+    count.textContent = `Pets: ${pets}. ${mood}`;
+    pet.textContent = pets >= 100 ? "👑🥔" : faces[pets % faces.length];
+    if (pets % 25 === 0) rain(["🥔", "❤️"], 25);
+  }
+  pet.addEventListener("click", petIt);
+  pet.addEventListener("keydown", (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); petIt(); } });
 
-            conn = peer.connect(targetId);
-            
-            conn.on('open', () => {
-                setupNetworkHandlers();
-                startGameSession();
-            });
-        }
+  // ---------- Banana cursor follower ----------
+  const follower = document.getElementById("follower");
+  window.addEventListener("pointermove", (e) => {
+    follower.style.transform = `translate(${e.clientX + 14}px, ${e.clientY + 14}px)`;
+  });
 
-        function setupNetworkHandlers() {
-            conn.on('data', (data) => {
-                if (data.type === 'move') {
-                    p1 = data.p1;
-                    p2 = data.p2;
-                    walls = data.walls;
-                    turn = data.turn;
-                    checkWinConditions();
-                    updateTurnUI();
-                    draw();
-                } else if (data.type === 'rematch') {
-                    initGameState();
-                }
-            });
-
-            conn.on('close', () => {
-                alert("Opponent disconnected.");
-                window.location.reload();
-            });
-        }
-
-        function startGameSession() {
-            document.getElementById('lobby').style.display = 'none';
-            turnIndicator.style.display = 'block';
-            document.getElementById('gameContainer').style.display = 'block';
-            initGameState();
-        }
-
-        function initGameState() {
-            p1 = { r: 0, c: 3 };
-            p2 = { r: gridSize - 1, c: 3 };
-            turn = 1; 
-            walls = [];
-            gameOver = false;
-            
-            overlay.classList.remove('show');
-            updateTurnUI();
-            draw();
-        }
-
-        function updateTurnUI() {
-            let activeRole = (turn === 1) ? 'P1' : 'P2';
-            let roleColorClass = (turn === 1) ? "p1-turn" : "p2-turn";
-            let roleName = (turn === 1) ? "Player 1 (Blue)" : "Player 2 (Red)";
-
-            if (myRole === activeRole) {
-                turnIndicator.innerText = `Your Turn (${roleName}) - Click to Move or Block`;
-            } else {
-                turnIndicator.innerText = `Opponent's Turn (${roleName}). Waiting...`;
-            }
-            turnIndicator.className = roleColorClass;
-        }
-
-        function sendState() {
-            conn.send({
-                type: 'move',
-                p1: p1,
-                p2: p2,
-                walls: walls,
-                turn: turn
-            });
-        }
-
-        function restartMatch() {
-            initGameState();
-            conn.send({ type: 'rematch' });
-        }
-
-        function hasWall(r, c, edge) {
-            return walls.some(w => {
-                if (edge === 'top') return w.type === 'H' && w.r === r && w.c === c;
-                if (edge === 'bottom') return w.type === 'H' && w.r === r + 1 && w.c === c;
-                if (edge === 'left') return w.type === 'V' && w.r === r && w.c === c;
-                if (edge === 'right') return w.type === 'V' && w.r === r && w.c === c + 1;
-                return false;
-            });
-        }
-
-        canvas.addEventListener('click', (e) => {
-            if (gameOver) return;
-            
-            // Block clicking if it's not your turn
-            if ((turn === 1 && myRole !== 'P1') || (turn === 2 && myRole !== 'P2')) {
-                return; 
-            }
-
-            const rect = canvas.getBoundingClientRect();
-            const mx = e.clientX - rect.left;
-            const my = e.clientY - rect.top;
-
-            let currentPlayer = (turn === 1) ? p1 : p2;
-
-            // Player piece movement logic
-            let targetC = Math.floor((mx - offset) / cellSize);
-            let targetR = Math.floor((my - offset) / cellSize);
-
-            if (targetC >= 0 && targetC < gridSize && targetR >= 0 && targetR < gridSize) {
-                let dr = targetR - currentPlayer.r;
-                let dc = targetC - currentPlayer.c;
-
-                if (Math.abs(dr) + Math.abs(dc) === 1) {
-                    let blocked = false;
-                    if (dr === -1 && hasWall(currentPlayer.r, currentPlayer.c, 'top')) blocked = true;
-                    if (dr === 1 && hasWall(currentPlayer.r, currentPlayer.c, 'bottom')) blocked = true;
-                    if (dc === -1 && hasWall(currentPlayer.r, currentPlayer.c, 'left')) blocked = true;
-                    if (dc === 1 && hasWall(currentPlayer.r, currentPlayer.c, 'right')) blocked = true;
-
-                    if (!blocked) {
-                        currentPlayer.r = targetR;
-                        currentPlayer.c = targetC;
-                        checkWinConditions();
-                        if (!gameOver) turn = (turn === 1) ? 2 : 1;
-
+  // ---------- Konami code ----------
+  const code = ["ArrowUp","ArrowUp","ArrowDown","ArrowDown","ArrowLeft","ArrowRight","ArrowLeft","ArrowRight","b","a"];
+  let pos = 0;
+  window.addEventListener("keydown", (e) => {
+    const key = e.key.length === 1 ? e.key.toLowerCase() : e.key;
+    pos = key === code[pos] ? pos + 1 : (key === code[0] ? 1 : 0);
+    if (pos === code.length) {
+      pos = 0;
+      document.body.style.filter = "hue-rotate(" + Math.floor(Math.random() * 360) + "deg)";
+      rain(["🍌","🦄","🌈","👾","🍕","🚀","🐸"], 100);
+    }
+  });
+</script>
+</body>
+</html>
