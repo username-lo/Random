@@ -2,618 +2,472 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1.0,user-scalable=no">
-<title>Forest Runner</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Riddle Master</title>
 
 <style>
 * {
-  box-sizing: border-box;
-  -webkit-user-select: none;
-  user-select: none;
+    box-sizing: border-box;
 }
 
-html, body {
-  margin: 0;
-  width: 100%;
-  height: 100%;
-  overflow: hidden;
-  background: #101820;
-  font-family: Arial, sans-serif;
+body {
+    margin: 0;
+    font-family: Arial, sans-serif;
+    background: #0b1020;
+    color: white;
+    min-height: 100vh;
+    display: flex;
+    justify-content: center;
+    align-items: center;
 }
 
-canvas {
-  display: block;
-  width: 100vw;
-  height: 100vh;
-  image-rendering: pixelated;
+.game {
+    width: 95%;
+    max-width: 700px;
+    background: #151c35;
+    border-radius: 22px;
+    padding: 30px;
+    box-shadow: 0 0 40px rgba(0,0,0,.5);
 }
 
-#ui {
-  position: fixed;
-  top: 15px;
-  left: 15px;
-  right: 15px;
-  display: flex;
-  justify-content: space-between;
-  color: white;
-  font-size: 20px;
-  font-weight: bold;
-  pointer-events: none;
-  text-shadow: 2px 2px #000;
+h1 {
+    text-align: center;
+    margin-top: 0;
+    font-size: 38px;
 }
 
-#message {
-  position: fixed;
-  inset: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-direction: column;
-  color: white;
-  text-align: center;
-  background: rgba(0,0,0,.55);
+.subtitle {
+    text-align: center;
+    color: #aab4d6;
 }
 
-#message h1 {
-  font-size: 48px;
-  margin: 10px;
-  text-shadow: 4px 4px #000;
+.stats {
+    display: flex;
+    justify-content: space-between;
+    margin: 20px 0;
+    color: #cbd4f5;
 }
 
-#message p {
-  font-size: 20px;
+.progress {
+    height: 10px;
+    background: #292f4a;
+    border-radius: 10px;
+    overflow: hidden;
+    margin-bottom: 25px;
+}
+
+.progress-bar {
+    height: 100%;
+    width: 10%;
+    background: #6c63ff;
+    transition: .4s;
+}
+
+.level {
+    text-align: center;
+    color: #8f88ff;
+    font-weight: bold;
+}
+
+.riddle {
+    font-size: 24px;
+    line-height: 1.5;
+    text-align: center;
+    margin: 30px 10px;
+}
+
+input {
+    width: 100%;
+    padding: 15px;
+    border: none;
+    border-radius: 12px;
+    background: #252d4b;
+    color: white;
+    font-size: 18px;
+    outline: none;
+}
+
+input:focus {
+    box-shadow: 0 0 0 2px #6c63ff;
 }
 
 button {
-  border: 0;
-  border-radius: 12px;
-  padding: 14px 28px;
-  font-size: 20px;
-  font-weight: bold;
-  background: #ffd43b;
-  color: #222;
+    width: 100%;
+    padding: 14px;
+    margin-top: 12px;
+    border: none;
+    border-radius: 12px;
+    background: #6c63ff;
+    color: white;
+    font-size: 17px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: .2s;
 }
 
-.hidden {
-  display: none !important;
+button:hover {
+    transform: scale(1.02);
+    background: #7b73ff;
 }
 
-/* Mobile controls */
-#controls {
-  position: fixed;
-  bottom: 25px;
-  left: 0;
-  right: 0;
-  display: flex;
-  justify-content: space-between;
-  padding: 0 25px;
-  pointer-events: none;
+.hint {
+    background: #303858;
 }
 
-.controlGroup {
-  display: flex;
-  gap: 12px;
+.message {
+    min-height: 30px;
+    text-align: center;
+    margin-top: 18px;
+    font-weight: bold;
 }
 
-.control {
-  width: 65px;
-  height: 65px;
-  border-radius: 16px;
-  background: rgba(255,255,255,.25);
-  border: 2px solid rgba(255,255,255,.5);
-  color: white;
-  font-size: 28px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  pointer-events: auto;
-  touch-action: none;
+.correct {
+    color: #55e69b;
+}
+
+.wrong {
+    color: #ff6b6b;
+}
+
+.hint-text {
+    color: #ffd166;
+    text-align: center;
+    margin-top: 15px;
+}
+
+#nextBtn {
+    display: none;
+    background: #22b573;
+}
+
+#restartBtn {
+    display: none;
+    background: #ff5c5c;
+}
+
+.final {
+    text-align: center;
+    display: none;
+}
+
+.final h2 {
+    font-size: 40px;
+    color: #55e69b;
+}
+
+.score {
+    font-size: 25px;
+    margin: 20px;
 }
 </style>
 </head>
 
 <body>
 
-<canvas id="game"></canvas>
+<div class="game">
 
-<div id="ui">
-  <div>🪙 <span id="coins">0</span></div>
-  <div>❤️ <span id="health">3</span></div>
-  <div>🏆 <span id="score">0</span></div>
-</div>
+    <div id="gameScreen">
 
-<div id="message">
-  <h1>🌲 Forest Runner</h1>
-  <p>Collect coins and survive the forest!</p>
-  <p>Computer: WASD / Arrow Keys</p>
-  <p>iPad: Use the buttons below</p>
-  <button id="start">PLAY</button>
-</div>
+        <h1>🧠 Riddle Master</h1>
+        <p class="subtitle">Only the smartest will reach Level 10.</p>
 
-<div id="controls">
-  <div class="controlGroup">
-    <div class="control" data-key="left">◀</div>
-    <div class="control" data-key="right">▶</div>
-  </div>
+        <div class="stats">
+            <span>❤️ Lives: <b id="lives">3</b></span>
+            <span>⭐ Score: <b id="score">0</b></span>
+            <span>🏆 Level: <b id="levelNumber">1</b>/10</span>
+        </div>
 
-  <div class="controlGroup">
-    <div class="control" data-key="up">▲</div>
-    <div class="control" data-key="down">▼</div>
-  </div>
+        <div class="progress">
+            <div class="progress-bar" id="progress"></div>
+        </div>
+
+        <div class="level" id="levelTitle">LEVEL 1</div>
+
+        <div class="riddle" id="riddle"></div>
+
+        <input
+            id="answer"
+            type="text"
+            placeholder="Type your answer..."
+            autocomplete="off"
+        >
+
+        <button onclick="checkAnswer()">SUBMIT ANSWER</button>
+
+        <button class="hint" onclick="showHint()">💡 USE HINT</button>
+
+        <div class="hint-text" id="hint"></div>
+
+        <div class="message" id="message"></div>
+
+        <button id="nextBtn" onclick="nextLevel()">NEXT LEVEL ➜</button>
+
+        <button id="restartBtn" onclick="restartGame()">🔄 PLAY AGAIN</button>
+
+    </div>
+
+    <div class="final" id="finalScreen">
+        <h2>🏆 YOU WON!</h2>
+
+        <p>You solved every riddle.</p>
+
+        <div class="score">
+            Final Score: <b id="finalScore">0</b>
+        </div>
+
+        <p>You're officially a RIDDLE MASTER.</p>
+
+        <button onclick="restartGame()">🔄 PLAY AGAIN</button>
+    </div>
+
 </div>
 
 <script>
-const canvas = document.getElementById("game");
-const ctx = canvas.getContext("2d");
 
-let W, H;
-let running = false;
+const riddles = [
 
-let coins = 0;
+    {
+        title: "LEVEL 1",
+        question: "I have keys but no locks. I have space but no room. You can enter, but you can't go inside. What am I?",
+        answers: ["keyboard"],
+        hint: "You probably use one to type."
+    },
+
+    {
+        title: "LEVEL 2",
+        question: "The more you take away from me, the bigger I become. What am I?",
+        answers: ["hole", "a hole"],
+        hint: "Think about digging."
+    },
+
+    {
+        title: "LEVEL 3",
+        question: "I speak without a mouth and hear without ears. I have no body, but I come alive with wind. What am I?",
+        answers: ["echo", "an echo"],
+        hint: "You might hear me in mountains."
+    },
+
+    {
+        title: "LEVEL 4",
+        question: "I am always in front of you, but can never be seen. What am I?",
+        answers: ["future", "the future"],
+        hint: "You haven't reached me yet."
+    },
+
+    {
+        title: "LEVEL 5",
+        question: "I have cities but no houses, forests but no trees, and rivers but no water. What am I?",
+        answers: ["map", "a map", "the map"],
+        hint: "You might use me when traveling."
+    },
+
+    {
+        title: "LEVEL 6",
+        question: "What disappears as soon as you say its name?",
+        answers: ["silence", "the silence"],
+        hint: "It exists when nobody is talking."
+    },
+
+    {
+        title: "LEVEL 7",
+        question: "I can be cracked, made, told, and played. What am I?",
+        answers: ["joke", "a joke"],
+        hint: "People laugh at me."
+    },
+
+    {
+        title: "LEVEL 8",
+        question: "I am lighter than a feather, but nobody can hold me for long. What am I?",
+        answers: ["breath", "air", "a breath"],
+        hint: "You do it automatically."
+    },
+
+    {
+        title: "LEVEL 9",
+        question: "A man looks at a picture and says: 'Brothers and sisters, I have none. But that man's father is my father's son.' Who is in the picture?",
+        answers: ["his son", "son", "the man's son"],
+        hint: "Remember: he has no brothers or sisters."
+    },
+
+    {
+        title: "LEVEL 10",
+        question: "You have three switches downstairs. One controls a light bulb upstairs. You may switch them however you want, but you can go upstairs only once. How do you determine which switch controls the bulb?",
+        answers: ["use heat", "turn one on", "heat", "use the bulb's heat"],
+        hint: "The bulb can tell you something even when it is turned off."
+    }
+
+];
+
+let currentLevel = 0;
+let lives = 3;
 let score = 0;
-let health = 3;
-let speed = 3;
+let hintUsed = false;
 
-const keys = {
-  up:false,
-  down:false,
-  left:false,
-  right:false
-};
+const riddle = document.getElementById("riddle");
+const answer = document.getElementById("answer");
+const message = document.getElementById("message");
+const hint = document.getElementById("hint");
+const livesText = document.getElementById("lives");
+const scoreText = document.getElementById("score");
+const levelNumber = document.getElementById("levelNumber");
+const levelTitle = document.getElementById("levelTitle");
+const progress = document.getElementById("progress");
+const nextBtn = document.getElementById("nextBtn");
+const restartBtn = document.getElementById("restartBtn");
 
-const player = {
-  x:0,
-  y:0,
-  size:30
-};
+function loadLevel() {
 
-let coinObjects = [];
-let enemies = [];
-let trees = [];
+    const level = riddles[currentLevel];
 
-function resize() {
-  W = canvas.width = window.innerWidth;
-  H = canvas.height = window.innerHeight;
+    riddle.textContent = level.question;
+    levelTitle.textContent = level.title;
 
-  if (!running) {
-    player.x = W / 2;
-    player.y = H / 2;
-  }
+    levelNumber.textContent = currentLevel + 1;
+
+    progress.style.width =
+        ((currentLevel + 1) / riddles.length * 100) + "%";
+
+    answer.value = "";
+    hint.textContent = "";
+    message.textContent = "";
+
+    nextBtn.style.display = "none";
+
+    hintUsed = false;
+
+    answer.focus();
 }
 
-window.addEventListener("resize", resize);
-resize();
+function normalize(text) {
+    return text
+        .toLowerCase()
+        .trim()
+        .replace(/[.,!?']/g, "");
+}
 
-/* Keyboard */
+function checkAnswer() {
 
-window.addEventListener("keydown", e => {
-  if (
-    e.key === "ArrowUp" ||
-    e.key.toLowerCase() === "w"
-  ) keys.up = true;
+    const userAnswer = normalize(answer.value);
 
-  if (
-    e.key === "ArrowDown" ||
-    e.key.toLowerCase() === "s"
-  ) keys.down = true;
+    if (!userAnswer) {
+        message.textContent = "Type an answer first!";
+        message.className = "message wrong";
+        return;
+    }
 
-  if (
-    e.key === "ArrowLeft" ||
-    e.key.toLowerCase() === "a"
-  ) keys.left = true;
+    const correctAnswers = riddles[currentLevel].answers;
 
-  if (
-    e.key === "ArrowRight" ||
-    e.key.toLowerCase() === "d"
-  ) keys.right = true;
+    const correct = correctAnswers.some(
+        a => normalize(a) === userAnswer
+    );
+
+    if (correct) {
+
+        let points = 100;
+
+        if (!hintUsed) {
+            points += 50;
+        }
+
+        score += points;
+
+        scoreText.textContent = score;
+
+        message.textContent =
+            "✅ CORRECT! +" + points + " points";
+
+        message.className = "message correct";
+
+        nextBtn.style.display = "block";
+
+        answer.disabled = true;
+
+    } else {
+
+        lives--;
+
+        livesText.textContent = lives;
+
+        message.textContent =
+            "❌ Wrong answer!";
+
+        message.className = "message wrong";
+
+        if (lives <= 0) {
+
+            message.textContent =
+                "💀 Game Over! The answer was: " +
+                riddles[currentLevel].answers[0];
+
+            restartBtn.style.display = "block";
+
+            answer.disabled = true;
+
+        }
+    }
+}
+
+function showHint() {
+
+    if (hintUsed) {
+        return;
+    }
+
+    hintUsed = true;
+
+    hint.textContent =
+        "💡 Hint: " + riddles[currentLevel].hint;
+}
+
+function nextLevel() {
+
+    currentLevel++;
+
+    if (currentLevel >= riddles.length) {
+
+        document.getElementById("gameScreen").style.display = "none";
+
+        document.getElementById("finalScreen").style.display = "block";
+
+        document.getElementById("finalScore").textContent = score;
+
+        return;
+    }
+
+    answer.disabled = false;
+
+    loadLevel();
+}
+
+function restartGame() {
+
+    currentLevel = 0;
+    lives = 3;
+    score = 0;
+
+    livesText.textContent = lives;
+    scoreText.textContent = score;
+
+    document.getElementById("gameScreen").style.display = "block";
+    document.getElementById("finalScreen").style.display = "none";
+
+    restartBtn.style.display = "none";
+
+    answer.disabled = false;
+
+    loadLevel();
+}
+
+answer.addEventListener("keydown", function(event) {
+
+    if (event.key === "Enter") {
+        checkAnswer();
+    }
+
 });
 
-window.addEventListener("keyup", e => {
-  if (
-    e.key === "ArrowUp" ||
-    e.key.toLowerCase() === "w"
-  ) keys.up = false;
+loadLevel();
 
-  if (
-    e.key === "ArrowDown" ||
-    e.key.toLowerCase() === "s"
-  ) keys.down = false;
-
-  if (
-    e.key === "ArrowLeft" ||
-    e.key.toLowerCase() === "a"
-  ) keys.left = false;
-
-  if (
-    e.key === "ArrowRight" ||
-    e.key.toLowerCase() === "d"
-  ) keys.right = false;
-});
-
-/* iPad buttons */
-
-document.querySelectorAll(".control").forEach(button => {
-
-  const key = button.dataset.key;
-
-  button.addEventListener("pointerdown", e => {
-    e.preventDefault();
-    keys[key] = true;
-  });
-
-  button.addEventListener("pointerup", e => {
-    e.preventDefault();
-    keys[key] = false;
-  });
-
-  button.addEventListener("pointercancel", () => {
-    keys[key] = false;
-  });
-
-  button.addEventListener("pointerleave", () => {
-    keys[key] = false;
-  });
-});
-
-/* Start */
-
-document.getElementById("start").onclick = startGame;
-
-function startGame() {
-
-  running = true;
-
-  coins = 0;
-  score = 0;
-  health = 3;
-  speed = 3;
-
-  player.x = W / 2;
-  player.y = H / 2;
-
-  coinObjects = [];
-  enemies = [];
-  trees = [];
-
-  document.getElementById("message").classList.add("hidden");
-
-  for (let i = 0; i < 35; i++) {
-    trees.push({
-      x: Math.random() * W,
-      y: Math.random() * H,
-      size: 25 + Math.random() * 30
-    });
-  }
-
-  for (let i = 0; i < 8; i++) {
-    spawnCoin();
-  }
-
-  for (let i = 0; i < 3; i++) {
-    spawnEnemy();
-  }
-}
-
-/* Spawn objects */
-
-function spawnCoin() {
-
-  coinObjects.push({
-    x: Math.random() * (W - 40) + 20,
-    y: Math.random() * (H - 40) + 20,
-    size: 14
-  });
-}
-
-function spawnEnemy() {
-
-  let side = Math.floor(Math.random() * 4);
-
-  let x, y;
-
-  if (side === 0) {
-    x = -30;
-    y = Math.random() * H;
-  } else if (side === 1) {
-    x = W + 30;
-    y = Math.random() * H;
-  } else if (side === 2) {
-    x = Math.random() * W;
-    y = -30;
-  } else {
-    x = Math.random() * W;
-    y = H + 30;
-  }
-
-  enemies.push({
-    x,
-    y,
-    size:25,
-    speed:1 + Math.random() * 1.5
-  });
-}
-
-/* Collision */
-
-function distance(a,b) {
-  return Math.hypot(a.x-b.x, a.y-b.y);
-}
-
-/* Update */
-
-function update() {
-
-  if (!running) return;
-
-  let dx = 0;
-  let dy = 0;
-
-  if (keys.left) dx--;
-  if (keys.right) dx++;
-  if (keys.up) dy--;
-  if (keys.down) dy++;
-
-  if (dx !== 0 || dy !== 0) {
-
-    const length = Math.hypot(dx,dy);
-
-    dx /= length;
-    dy /= length;
-
-    player.x += dx * speed;
-    player.y += dy * speed;
-  }
-
-  /* Keep player inside screen */
-
-  player.x = Math.max(
-    player.size / 2,
-    Math.min(W - player.size / 2, player.x)
-  );
-
-  player.y = Math.max(
-    player.size / 2,
-    Math.min(H - player.size / 2, player.y)
-  );
-
-  /* Coins */
-
-  for (let i = coinObjects.length - 1; i >= 0; i--) {
-
-    const c = coinObjects[i];
-
-    if (distance(player,c) < 25) {
-
-      coins++;
-      score += 10;
-
-      coinObjects.splice(i,1);
-      spawnCoin();
-    }
-  }
-
-  /* Enemies */
-
-  enemies.forEach(enemy => {
-
-    let dx = player.x - enemy.x;
-    let dy = player.y - enemy.y;
-
-    let d = Math.hypot(dx,dy);
-
-    if (d > 0) {
-      enemy.x += (dx/d) * enemy.speed;
-      enemy.y += (dy/d) * enemy.speed;
-    }
-
-    if (distance(player,enemy) < 30) {
-
-      health--;
-
-      enemy.x = Math.random() * W;
-      enemy.y = Math.random() * H;
-
-      if (health <= 0) {
-        gameOver();
-      }
-    }
-  });
-
-  score++;
-
-  /* Difficulty */
-
-  speed = 3 + Math.floor(score / 1000) * .5;
-
-  if (score % 700 === 0 && enemies.length < 10) {
-    spawnEnemy();
-  }
-
-  document.getElementById("coins").textContent = coins;
-  document.getElementById("health").textContent = health;
-  document.getElementById("score").textContent = score;
-}
-
-/* Draw */
-
-function draw() {
-
-  /* Grass */
-
-  ctx.fillStyle = "#5ca34a";
-  ctx.fillRect(0,0,W,H);
-
-  /* Grass pixels */
-
-  ctx.fillStyle = "#4d913d";
-
-  for (let x = 0; x < W; x += 40) {
-    for (let y = 0; y < H; y += 40) {
-      if ((x+y) % 80 === 0) {
-        ctx.fillRect(x,y,8,8);
-      }
-    }
-  }
-
-  /* Trees */
-
-  trees.forEach(tree => {
-
-    ctx.fillStyle = "#70452a";
-
-    ctx.fillRect(
-      tree.x - 5,
-      tree.y,
-      10,
-      tree.size
-    );
-
-    ctx.fillStyle = "#236b32";
-
-    ctx.fillRect(
-      tree.x - tree.size / 2,
-      tree.y - tree.size / 2,
-      tree.size,
-      tree.size
-    );
-
-    ctx.fillStyle = "#2f873b";
-
-    ctx.fillRect(
-      tree.x - tree.size / 3,
-      tree.y - tree.size / 1.5,
-      tree.size / 1.5,
-      tree.size / 1.5
-    );
-  });
-
-  /* Coins */
-
-  coinObjects.forEach(c => {
-
-    ctx.fillStyle = "#eabf2f";
-
-    ctx.fillRect(
-      c.x - c.size,
-      c.y - c.size,
-      c.size * 2,
-      c.size * 2
-    );
-
-    ctx.fillStyle = "#fff08a";
-
-    ctx.fillRect(
-      c.x - 4,
-      c.y - 8,
-      5,
-      16
-    );
-  });
-
-  /* Enemies */
-
-  enemies.forEach(enemy => {
-
-    ctx.fillStyle = "#7d2635";
-
-    ctx.fillRect(
-      enemy.x - enemy.size / 2,
-      enemy.y - enemy.size / 2,
-      enemy.size,
-      enemy.size
-    );
-
-    ctx.fillStyle = "white";
-
-    ctx.fillRect(enemy.x - 9,enemy.y - 7,6,6);
-    ctx.fillRect(enemy.x + 3,enemy.y - 7,6,6);
-
-    ctx.fillStyle = "black";
-
-    ctx.fillRect(enemy.x - 7,enemy.y - 5,3,3);
-    ctx.fillRect(enemy.x + 5,enemy.y - 5,3,3);
-  });
-
-  /* Player */
-
-  ctx.fillStyle = "#2764d8";
-
-  ctx.fillRect(
-    player.x - player.size / 2,
-    player.y - player.size / 2,
-    player.size,
-    player.size
-  );
-
-  /* Player face */
-
-  ctx.fillStyle = "white";
-
-  ctx.fillRect(
-    player.x - 9,
-    player.y - 7,
-    6,
-    6
-  );
-
-  ctx.fillRect(
-    player.x + 3,
-    player.y - 7,
-    6,
-    6
-  );
-
-  ctx.fillStyle = "black";
-
-  ctx.fillRect(
-    player.x - 7,
-    player.y - 5,
-    3,
-    3
-  );
-
-  ctx.fillRect(
-    player.x + 5,
-    player.y - 5,
-    3,
-    3
-  );
-}
-
-/* Game over */
-
-function gameOver() {
-
-  running = false;
-
-  document.getElementById("message").classList.remove("hidden");
-
-  document.querySelector("#message h1").textContent =
-    "GAME OVER";
-
-  document.querySelector("#message p").textContent =
-    "You collected " + coins + " coins!";
-
-  document.querySelector("#message p:nth-of-type(2)").textContent =
-    "Score: " + score;
-
-  document.querySelector("#message p:nth-of-type(3)").textContent =
-    "Try to beat your score!";
-
-  document.getElementById("start").textContent = "PLAY AGAIN";
-}
-
-/* Game loop */
-
-function loop() {
-
-  update();
-  draw();
-
-  requestAnimationFrame(loop);
-}
-
-loop();
 </script>
 
 </body>
